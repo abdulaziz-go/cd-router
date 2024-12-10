@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"gopkg.in/mgo.v2/bson"
-	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	urlPackage "net/url"
@@ -31,7 +31,7 @@ func openHttpTunnel(port int, subdomain string, ctx context.Context) {
 		subdomain = u.Username
 	}
 	query := fmt.Sprintf("port=%d&username=%s&version=%s", port, subdomain, version)
-	url := urlPackage.URL{Scheme: "ws", Host: baseHost, Path: "/_create_tunnel/", RawQuery: query} // agar baseHost ssl/tls support qilsa wss directly ip orqali bo'layotgan bo'lsa ws
+	url := urlPackage.URL{Scheme: "wss", Host: baseHost, Path: "/_create_tunnel/", RawQuery: query} // agar baseHost ssl/tls support qilsa wss directly ip orqali bo'layotgan bo'lsa ws
 	fmt.Println(url.String())
 	ws, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 	if err != nil {
@@ -66,52 +66,10 @@ out:
 		case <-ctx.Done():
 			break out
 		case request := <-requests:
-			go handleHttpRequest(ws, tunnel.Token, port, request)
+			go handleHTTPRequest(ws, tunnel.Token, port, request)
 		}
 	}
 	fmt.Println("dispatcher tunnel closed")
-}
-
-func handleHttpRequest(ws *websocket.Conn, token string, port int, r dispatcher.RequestMessage) {
-	url := fmt.Sprintf("http://127.0.0.1:%d%s", port, r.URL)
-	request, err := http.NewRequest(r.Method, url, bytes.NewReader(r.Body))
-	if err != nil {
-		fmt.Printf("failed to build request: %s", err.Error())
-		return
-	}
-	for key, val := range r.Header {
-		request.Header.Add(key, val)
-	}
-
-	var client http.Client
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Printf("Failed to perform request: %s", err.Error())
-		return
-	}
-	responseMessage := dispatcher.ResponseMessage{}
-	for name, values := range response.Header {
-		responseMessage.Header[name] = values[0]
-	}
-	if response.Body != nil {
-		responseMessage.Body, _ = io.ReadAll(response.Body)
-		response.Body.Close()
-	}
-
-	responseMessage.Status = response.StatusCode
-	responseMessage.RequestId = r.ID
-	responseMessage.Token = token
-	message, err := bson.Marshal(responseMessage)
-	if err != nil {
-		fmt.Printf("Error Encoding Response Message: %s\n", err.Error())
-		return
-	}
-	err = ws.WriteMessage(websocket.BinaryMessage, message)
-	if err != nil {
-		fmt.Printf("Error Sending Message to Server: %s", err)
-		return
-	}
-	fmt.Println(r.Method, r.URL, responseMessage.Status)
 }
 
 func handleHttpRequests(ws *websocket.Conn, requests chan<- dispatcher.RequestMessage) {
@@ -127,4 +85,54 @@ func handleHttpRequests(ws *websocket.Conn, requests chan<- dispatcher.RequestMe
 		}
 		requests <- requestMessage
 	}
+}
+func handleHTTPRequest(ws *websocket.Conn, token string, port int, r dispatcher.RequestMessage) {
+	url := fmt.Sprintf("http://127.0.0.1:%d%s", port, r.URL)
+	request, err := http.NewRequest(r.Method, url, bytes.NewReader(r.Body))
+	if err != nil {
+		fmt.Printf("Failed to Build Request: %s\n", err.Error())
+		return
+	}
+
+	for key, val := range r.Header {
+		request.Header.Add(key, val)
+	}
+
+	var client http.Client
+	response, err := client.Do(request)
+
+	if err != nil {
+		fmt.Printf("Failed to Perform Request: %s\n", err.Error())
+		return
+	}
+
+	responseMessage := dispatcher.ResponseMessage{}
+
+	responseMessage.Header = make(map[string]string)
+	for name, values := range response.Header {
+		responseMessage.Header[name] = values[0]
+	}
+
+	if response.Body != nil {
+		responseMessage.Body, _ = ioutil.ReadAll(response.Body)
+		response.Body.Close()
+	}
+
+	responseMessage.Status = response.StatusCode
+	responseMessage.RequestId = r.ID
+	responseMessage.Token = token
+
+	message, err := bson.Marshal(responseMessage)
+	if err != nil {
+		fmt.Printf("Error Encoding Response Message: %s\n", err.Error())
+		return
+	}
+
+	err = ws.WriteMessage(websocket.BinaryMessage, message)
+	if err != nil {
+		fmt.Printf("Error Sending Message to Server: %s", err)
+		return
+	}
+
+	fmt.Println(r.Method, r.URL, responseMessage.Status)
 }
