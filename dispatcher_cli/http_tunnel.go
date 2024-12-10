@@ -31,7 +31,7 @@ func openHttpTunnel(port int, subdomain string, ctx context.Context) {
 		subdomain = u.Username
 	}
 	query := fmt.Sprintf("port=%d&username=%s&version=%s", port, subdomain, version)
-	url := urlPackage.URL{Scheme: "wss", Host: baseHost, Path: "/_create_tunnel/", RawQuery: query} // agar baseHost ssl/tls support qilsa wss directly ip orqali bo'layotgan bo'lsa ws
+	url := urlPackage.URL{Scheme: "ws", Host: baseHost, Path: "/_create_tunnel/", RawQuery: query} // agar baseHost ssl/tls support qilsa wss directly ip orqali bo'layotgan bo'lsa ws
 	fmt.Println(url.String())
 	ws, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 	if err != nil {
