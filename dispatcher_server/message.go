@@ -18,3 +18,11 @@ type RequestMessage struct {
 	Header       map[string]string    `bson:"header"`
 	ResponseChan chan ResponseMessage `bson:"-"`
 }
+
+type ErrorMessage struct {
+	Error string `bson:"error"`
+}
+type TunnelMessage struct {
+	Host  string `bson:"host"`
+	Token string `bson:"token"`
+}
