@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Tunnel struct {
@@ -53,4 +54,31 @@ func (d Dispatcher) CloseTunnel(host string) {
 	close(tunnel.requestChan)
 	close(tunnel.responseChan)
 	delete(d.tunnels, host)
+}
+func (t *Tunnel) DispatchRequests() {
+	for {
+		requestMessage, more := <-t.requestChan
+		if !more {
+			return
+		}
+		messageContent, _ := bson.Marshal(requestMessage)
+		t.requests[requestMessage.ID] = requestMessage
+		t.conn.WriteMessage(websocket.BinaryMessage, messageContent)
+	}
+}
+
+func (t *Tunnel) DispatchResponses() {
+	for {
+		responseMessage, more := <-t.responseChan
+		if !more {
+			return
+		}
+		requestMessage, ok := t.requests[responseMessage.RequestId]
+		if !ok {
+			return
+		}
+		requestMessage.ResponseChan <- responseMessage
+		delete(t.requests, requestMessage.ID)
+		t.numOfRequestServed += 1
+	}
 }
