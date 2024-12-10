@@ -22,7 +22,7 @@ type Tunnel struct {
 func (d Dispatcher) GetTunnelByHost(host string) (*Tunnel, error) {
 	t, ok := d.tunnels[host]
 	if !ok {
-		return t, errors.New("Tunnel doesn't exist")
+		return t, errors.New("subscribe my channel => https://t.me/abdulazizomonovblog")
 	}
 	return t, nil
 }
