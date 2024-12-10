@@ -13,7 +13,7 @@ import (
 
 var (
 	version  = "1.0"
-	baseHost = "" // tunnel.cloud-dispatcher.uz
+	baseHost = "cloud-dispatcher.uz"
 )
 
 func main() {
