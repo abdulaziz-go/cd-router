@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 	d := dispatcher.New(baseHost)
 	r := mux.NewRouter()
-	r.HandleFunc("/create_tunnel/", d.SocketHandler)
+	r.HandleFunc("/_create_tunnel/", d.SocketHandler)
 	r.PathPrefix("/").HandlerFunc(d.HttpHandler)
 	fmt.Println("Server is running on Port 4200")
 	log.Fatal(http.ListenAndServe(":4200", r))
