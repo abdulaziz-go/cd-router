@@ -48,4 +48,21 @@ func (d Dispatcher) SocketHandler(w http.ResponseWriter, r *http.Request) {
 	ws.WriteMessage(websocket.BinaryMessage, messageContent)
 	go tunnel.DispatchRequests()
 	go tunnel.DispatchResponses()
+
+	for {
+		_, message, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+		response := ResponseMessage{}
+		err = bson.Unmarshal(message, &response)
+		if err != nil {
+			return
+		}
+		if response.Token != tunnel.token {
+			fmt.Println("Auth failed: ", tunnel.host)
+			continue
+		}
+		tunnel.responseChan <- response
+	}
 }
