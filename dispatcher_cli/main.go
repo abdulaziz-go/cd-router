@@ -20,7 +20,7 @@ func main() {
 	log.SetFlags(0)
 
 	if len(os.Args) < 3 {
-		log.Fatalf("Usage: jprq <PROTOCOL> <PORT> [-subdomain=<SUBDOMAIN>]\n"+
+		log.Fatalf("Usage: dispatcher <PROTOCOL> <PORT> [-subdomain=<SUBDOMAIN>]\n"+
 			"  Supported Protocols: [tcp, http]\n"+
 			"  Optional Argument: -subdomain\n"+
 			"  Client Version: %s\n", version)

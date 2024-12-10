@@ -13,7 +13,6 @@ import (
 	"os/user"
 
 	"github.com/gorilla/websocket"
-	"golang.org/x/net/websocket"
 )
 
 type HttpTunnel struct {
@@ -69,6 +68,7 @@ out:
 			go handleHttpRequest(ws, tunnel.Token, port, request)
 		}
 	}
+	fmt.Println("dispatcher tunnel closed")
 }
 
 func handleHttpRequest(ws *websocket.Conn, token string, port int, r dispatcher.RequestMessage) {
