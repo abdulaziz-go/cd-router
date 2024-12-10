@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	version  = "1.0"
-	baseHost = "cloud-dispatcher.uz"
+	version = "1.0"
+	//baseHost = "cloud-dispatcher.uz"
+	baseHost = "camelot-register.uz"
 )
 
 func main() {

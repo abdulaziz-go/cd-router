@@ -12,7 +12,7 @@ import (
 var baseHost string
 
 func main() {
-	flag.StringVar(&baseHost, "host", "cloud-dispatcher.uz", "Base Host")
+	flag.StringVar(&baseHost, "host", "camelot-register.uz", "Base Host")
 	flag.Parse()
 	d := dispatcher.New(baseHost)
 	r := mux.NewRouter()
