@@ -5,14 +5,12 @@ import (
 	dispatcher "cloud-dispatcher-router/dispatcher_server"
 	"context"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"log"
 	"net/http"
 	urlPackage "net/url"
-	"os/user"
-
-	"github.com/gorilla/websocket"
 )
 
 type HttpTunnel struct {
@@ -23,13 +21,6 @@ type HttpTunnel struct {
 }
 
 func openHttpTunnel(port int, subdomain string, ctx context.Context) {
-	if subdomain == "" {
-		u, err := user.Current()
-		if err != nil {
-			log.Fatalf("Please specify -subdomain")
-		}
-		subdomain = u.Username
-	}
 	query := fmt.Sprintf("port=%d&username=%s&version=%s", port, subdomain, version)
 	url := urlPackage.URL{Scheme: "wss", Host: baseHost, Path: "/_create_tunnel/", RawQuery: query} // agar baseHost ssl/tls support qilsa wss directly ip orqali bo'layotgan bo'lsa ws
 	fmt.Println(url.String())
@@ -58,8 +49,19 @@ func openHttpTunnel(port int, subdomain string, ctx context.Context) {
 	fmt.Println("Tunnel status: Online")
 	fmt.Printf("Forwarded: %s -> localhost:%d", tunnel.Host, port)
 	requests := make(chan dispatcher.RequestMessage)
+	responses := make(chan []byte)
 	defer close(requests)
+	defer close(responses)
+
 	go handleHttpRequests(ws, requests)
+	go func() {
+		for respons := range responses {
+			if err := ws.WriteMessage(websocket.BinaryMessage, respons); err != nil {
+				log.Printf("Error Sending Message to Server: %s", err)
+				return
+			}
+		}
+	}()
 out:
 	for {
 		select {
@@ -127,12 +129,11 @@ func handleHTTPRequest(ws *websocket.Conn, token string, port int, r dispatcher.
 		fmt.Printf("Error Encoding Response Message: %s\n", err.Error())
 		return
 	}
-
 	err = ws.WriteMessage(websocket.BinaryMessage, message)
+
 	if err != nil {
 		fmt.Printf("Error Sending Message to Server: %s", err)
 		return
 	}
-
 	fmt.Println(r.Method, r.URL, responseMessage.Status)
 }
